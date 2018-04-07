@@ -11,6 +11,22 @@ class Paddle(pygame.sprite.Sprite):
         self.image = pygame.image.load("img/paddle_vert.png").convert_alpha()
         self.rect = self.image.get_rect()
         self.rect.center = position
+        self.move_y = 0
+
+    def handle_key_down(self, key):
+        if key == pygame.K_z:
+            self.move_y = 1
+        elif key == pygame.K_a:
+            self.move_y = -1
+    
+    def handle_key_up(self, key):
+        if key == pygame.K_z and self.move_y == 1:
+            self.move_y = 0
+        elif key == pygame.K_a and self.move_y == -1:
+            self.move_y = 0
+
+    def update(self):
+        self.rect.move_ip(0,self.move_y)
 
 class Game:
 
@@ -45,6 +61,17 @@ class Game:
         for ourevent in pygame.event.get():
             if ourevent.type == pygame.QUIT:
                 self.state = self.GAME_OVER
+
+            if ourevent.type == pygame.KEYUP:
+                if ourevent.key == pygame.K_ESCAPE:
+                    self.state = self.GAME_OVER
+                else:
+                    for sprite in self.sprites:
+                        sprite.handle_key_up(ourevent.key)
+
+            if ourevent.type == pygame.KEYDOWN:
+                for sprite in self.sprites:
+                        sprite.handle_key_down(ourevent.key)
 
     def create_game_sprites(self):
         self.sprites = pygame.sprite.Group()

@@ -6,6 +6,8 @@ import pygame
 SCREEN_SIZE = (640, 480)
 
 class Paddle(pygame.sprite.Sprite):
+    Y_SPEED = 0.75
+
     def __init__(self, position):
         pygame.sprite.Sprite.__init__(self)
         self.image = pygame.image.load("img/paddle_vert.png").convert_alpha()
@@ -15,18 +17,21 @@ class Paddle(pygame.sprite.Sprite):
 
     def handle_key_down(self, key):
         if key == pygame.K_z:
-            self.move_y = 1
+            self.move_y = self.Y_SPEED
         elif key == pygame.K_a:
-            self.move_y = -1
+            self.move_y = -self.Y_SPEED
     
     def handle_key_up(self, key):
-        if key == pygame.K_z and self.move_y == 1:
+        if key == pygame.K_z and self.move_y == self.Y_SPEED:
             self.move_y = 0
-        elif key == pygame.K_a and self.move_y == -1:
+        elif key == pygame.K_a and self.move_y == -self.Y_SPEED:
             self.move_y = 0
 
-    def update(self):
-        self.rect.move_ip(0,self.move_y)
+    def change_position(self, ms):
+        self.rect.move_ip(0,self.move_y * ms)
+
+    def update(self, ms):
+        self.change_position(ms)
 
 class Game:
 
@@ -38,6 +43,7 @@ class Game:
         self.backdrop = pygame.image.load('img/pong_a_2.bmp').convert()
         self.state = self.RUNNING
         self.create_game_sprites()
+        self.clock = pygame.time.Clock()
 
     def is_game_over(self):
         return self.state == self.GAME_OVER
@@ -53,6 +59,7 @@ class Game:
         self.sprites.draw(self.screen)
         pygame.display.update()
         pygame.time.delay(2)
+        return self.clock.tick(60)
         
     def terminate(self):
         pygame.quit()
@@ -77,16 +84,16 @@ class Game:
         self.sprites = pygame.sprite.Group()
         self.sprites.add( Paddle( (100,100)))
 
-    def update(self):
-        self.sprites.update()
+    def update(self, ms):
+        self.sprites.update(ms)
 
 def main(args):
     game = Game(SCREEN_SIZE, "python pong")
     
     while not game.is_game_over():
-        game.render()
+        ms = game.render()
         game.handle_events()
-        game.update()
+        game.update(ms)
     
     game.terminate()
 

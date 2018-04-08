@@ -4,6 +4,8 @@
 import pygame
 
 SCREEN_SIZE = (640, 480)
+TOP_BAR_HEIGHT = 40
+BORDER_SIZE = 10
 
 class Paddle(pygame.sprite.Sprite):
     Y_SPEED = 0.75
@@ -30,8 +32,24 @@ class Paddle(pygame.sprite.Sprite):
     def change_position(self, ms):
         self.rect.move_ip(0,self.move_y * ms)
 
+    def lowest_y_value(self):
+        return TOP_BAR_HEIGHT + BORDER_SIZE + self.rect.height / 2
+
+    def highest_y_value(self):
+        return SCREEN_SIZE[1] - BORDER_SIZE - self.rect.height / 2
+    
+    def is_too_low(self):
+        return self.rect.center[1] < self.lowest_y_value()
+
+    def is_too_high(self):
+        return self.rect.center[1] > self.highest_y_value()
+
     def update(self, ms):
         self.change_position(ms)
+        if self.is_too_low():
+            self.rect.center = ( self.rect.center[0], self.lowest_y_value() )
+        elif self.is_too_high():
+            self.rect.center = ( self.rect.center[0], self.highest_y_value() )
 
 class Game:
 

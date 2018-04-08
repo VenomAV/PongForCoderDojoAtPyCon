@@ -10,23 +10,28 @@ BORDER_SIZE = 10
 class Paddle(pygame.sprite.Sprite):
     Y_SPEED = 0.75
 
-    def __init__(self, position):
+    def __init__(self, position, keys):
         pygame.sprite.Sprite.__init__(self)
         self.image = pygame.image.load("img/paddle_vert.png").convert_alpha()
         self.rect = self.image.get_rect()
         self.rect.center = position
         self.move_y = 0
+        self.setup_keys(keys)
+
+    def setup_keys(self, keys):
+        self.key_move_down = keys[0]
+        self.key_move_up = keys[1]
 
     def handle_key_down(self, key):
-        if key == pygame.K_z:
+        if key == self.key_move_down:
             self.move_y = self.Y_SPEED
-        elif key == pygame.K_a:
+        elif key == self.key_move_up:
             self.move_y = -self.Y_SPEED
     
     def handle_key_up(self, key):
-        if key == pygame.K_z and self.move_y == self.Y_SPEED:
+        if key == self.key_move_down and self.move_y == self.Y_SPEED:
             self.move_y = 0
-        elif key == pygame.K_a and self.move_y == -self.Y_SPEED:
+        elif key == self.key_move_up and self.move_y == -self.Y_SPEED:
             self.move_y = 0
 
     def change_position(self, ms):
@@ -100,7 +105,8 @@ class Game:
 
     def create_game_sprites(self):
         self.sprites = pygame.sprite.Group()
-        self.sprites.add( Paddle( (100,100)))
+        self.sprites.add( Paddle( (20, SCREEN_SIZE[1] / 2), (pygame.K_z, pygame.K_a, pygame.K_s)))
+        self.sprites.add( Paddle( (SCREEN_SIZE[0]-20, SCREEN_SIZE[1] / 2), (pygame.K_l, pygame.K_p, pygame.K_o)))
 
     def update(self, ms):
         self.sprites.update(ms)

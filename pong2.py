@@ -2,11 +2,59 @@
 # -*- coding: utf-8 -*-
 
 import pygame
+import random
 
 SCREEN_SIZE = (640, 480)
 TOP_BAR_HEIGHT = 40
-BORDER_SIZE = 10
+BORDER_SIZE = 5
+        
+class Ball(pygame.sprite.Sprite):
+    def __init__(self):
+        pygame.sprite.Sprite.__init__(self)
+        self.image = pygame.image.load("img/ball_base.png").convert_alpha()
+        self.rect = self.image.get_rect()
+        self.rect.center = (SCREEN_SIZE[0] / 2, SCREEN_SIZE[1] / 2)
+        self.position = [ float(self.rect.center[0]), float(self.rect.center[1]) ]
+        self.speed = [0.25, 0.3]
+        
+    def lowest_y_value(self):
+        return TOP_BAR_HEIGHT + BORDER_SIZE + self.rect.height / 2
 
+    def highest_y_value(self):
+        return SCREEN_SIZE[1] - BORDER_SIZE - self.rect.height / 2
+    
+    def is_too_low(self):
+        return self.position[1] < self.lowest_y_value()
+
+    def is_too_high(self):
+        return self.position[1] > self.highest_y_value()
+
+    def is_too_left(self):
+        return self.position[0] < 0
+
+    def is_too_right(self):
+        return self.position[0] > SCREEN_SIZE[0]
+
+    def bounce_vertical(self):
+        self.speed[1] *= -1
+
+    def bounce_horizontal(self):
+        self.speed[0] *= -1
+
+    def update_bouncing(self, ms):
+
+        self.position = (self.position[0] + self.speed[0] * ms, self.position[1] + self.speed[1] * ms)
+        self.rect.center = self.position
+        
+        if self.is_too_low() or self.is_too_high():
+            self.bounce_vertical()
+
+        if self.is_too_left() or self.is_too_right():
+            self.bounce_horizontal()
+    
+    def update(self, ms):
+        self.update_bouncing(ms)
+ 
 class Paddle(pygame.sprite.Sprite):
     Y_SPEED = 0.75
 
@@ -80,8 +128,8 @@ class Game:
     def render(self):
         self.screen.blit(self.backdrop,(0,0))
         self.sprites.draw(self.screen)
+        self.ball_group.draw(self.screen)
         pygame.display.update()
-        pygame.time.delay(2)
         return self.clock.tick(60)
         
     def terminate(self):
@@ -107,9 +155,11 @@ class Game:
         self.sprites = pygame.sprite.Group()
         self.sprites.add( Paddle( (20, SCREEN_SIZE[1] / 2), (pygame.K_z, pygame.K_a, pygame.K_s)))
         self.sprites.add( Paddle( (SCREEN_SIZE[0]-20, SCREEN_SIZE[1] / 2), (pygame.K_l, pygame.K_p, pygame.K_o)))
+        self.ball_group = pygame.sprite.GroupSingle( Ball() )
 
     def update(self, ms):
         self.sprites.update(ms)
+        self.ball_group.update(ms)
 
 def main(args):
     game = Game(SCREEN_SIZE, "python pong")

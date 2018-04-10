@@ -9,13 +9,15 @@ TOP_BAR_HEIGHT = 40
 BORDER_SIZE = 5
         
 class Ball(pygame.sprite.Sprite):
-    def __init__(self):
+    def __init__(self, paddles):
         pygame.sprite.Sprite.__init__(self)
         self.image = pygame.image.load("img/ball_base.png").convert_alpha()
         self.rect = self.image.get_rect()
         self.rect.center = (SCREEN_SIZE[0] / 2, SCREEN_SIZE[1] / 2)
         self.position = [ float(self.rect.center[0]), float(self.rect.center[1]) ]
-        self.speed = [0.25, 0.3]
+        self.speed = [0.25, random.uniform(0.3, 1.0)]
+        self.paddles = paddles
+        self.last_collided = None
         
     def lowest_y_value(self):
         return TOP_BAR_HEIGHT + BORDER_SIZE + self.rect.height / 2
@@ -38,8 +40,21 @@ class Ball(pygame.sprite.Sprite):
     def bounce_vertical(self):
         self.speed[1] *= -1
 
-    def bounce_horizontal(self):
+    def bounce_horizontal(self, paddle_touched):
         self.speed[0] *= -1
+        # we can use paddle_touched position/direction to affect ball position/speed
+        # e.g. used this dy = paddle_touched.rect.center[1] - self.rect.center[1] 
+        # to change ball y speed
+
+    def touching_a_paddle(self):
+        paddles_touched = pygame.sprite.spritecollide(self, self.paddles, False)
+        if len(paddles_touched) > 0:
+            if self.last_collided is None:
+                self.last_collided = paddles_touched[0]
+                return paddles_touched[0]
+        else:
+            self.last_collided = None
+            return None
 
     def update_bouncing(self, ms):
 
@@ -50,7 +65,11 @@ class Ball(pygame.sprite.Sprite):
             self.bounce_vertical()
 
         if self.is_too_left() or self.is_too_right():
-            self.bounce_horizontal()
+            self.bounce_horizontal(None)
+
+        paddle_touched = self.touching_a_paddle()
+        if paddle_touched is not None:
+            self.bounce_horizontal(paddle_touched)
     
     def update(self, ms):
         self.update_bouncing(ms)
@@ -155,7 +174,7 @@ class Game:
         self.sprites = pygame.sprite.Group()
         self.sprites.add( Paddle( (20, SCREEN_SIZE[1] / 2), (pygame.K_z, pygame.K_a, pygame.K_s)))
         self.sprites.add( Paddle( (SCREEN_SIZE[0]-20, SCREEN_SIZE[1] / 2), (pygame.K_l, pygame.K_p, pygame.K_o)))
-        self.ball_group = pygame.sprite.GroupSingle( Ball() )
+        self.ball_group = pygame.sprite.GroupSingle( Ball(self.sprites) )
 
     def update(self, ms):
         self.sprites.update(ms)

@@ -8,6 +8,7 @@ SCREEN_SIZE = (640, 480)
 TOP_BAR_HEIGHT = 40
 BORDER_SIZE = 5
 
+BALL_SCORED = pygame.USEREVENT + 0
 BALL_SERVED = pygame.USEREVENT + 1
 
 class Ball(pygame.sprite.Sprite):
@@ -43,6 +44,10 @@ class Ball(pygame.sprite.Sprite):
     def is_too_right(self):
         return self.position[0] > SCREEN_SIZE[0]
 
+    def score_point(self):
+        pygame.event.post( pygame.event.Event( BALL_SCORED, position = self.rect.center) )
+        self.speed = [0, 0]
+
     def bounce_vertical(self):
         self.speed[1] *= -1
 
@@ -71,7 +76,7 @@ class Ball(pygame.sprite.Sprite):
             self.bounce_vertical()
 
         if self.is_too_left() or self.is_too_right():
-            self.bounce_horizontal(None)
+            self.score_point()
 
         paddle_touched = self.touching_a_paddle()
         if paddle_touched is not None:
@@ -113,6 +118,7 @@ class Paddle(pygame.sprite.Sprite):
         self.rect.center = position
         self.move_y = 0
         self.setup_keys(keys)
+        self.points = 0
 
     def setup_keys(self, keys):
         self.key_move_down = keys[0]
@@ -203,8 +209,21 @@ class Game:
                 for sprite in self.sprites:
                         sprite.handle_key_down(ourevent.key)
 
+            if ourevent.type == BALL_SCORED:
+                self.update_score(ourevent.position)
+
             if ourevent.type == BALL_SERVED:
                 self.ball_group.sprite.ball_served(ourevent.player)
+            
+    def update_score(self, position):
+        [ paddle_0, paddle_1 ] = self.sprites.sprites()
+       
+        if position[0] > SCREEN_SIZE[0] / 2:
+            paddle_0.points += 1
+            self.ball_group.sprite.set_serving_player(paddle_0)
+        else:
+            paddle_1.points += 1
+            self.ball_group.sprite.set_serving_player(paddle_1)
 
     def choose_serving_player(self):
         [ paddle_0, paddle_1 ] = self.sprites.sprites()

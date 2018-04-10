@@ -7,7 +7,9 @@ import random
 SCREEN_SIZE = (640, 480)
 TOP_BAR_HEIGHT = 40
 BORDER_SIZE = 5
-        
+
+BALL_SERVED = pygame.USEREVENT + 1
+
 class Ball(pygame.sprite.Sprite):
     def __init__(self, paddles):
         pygame.sprite.Sprite.__init__(self)
@@ -15,9 +17,13 @@ class Ball(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.center = (SCREEN_SIZE[0] / 2, SCREEN_SIZE[1] / 2)
         self.position = [ float(self.rect.center[0]), float(self.rect.center[1]) ]
-        self.speed = [0.25, random.uniform(0.3, 1.0)]
+        self.speed = [0.0, 0.0]
         self.paddles = paddles
+        self.serving_player = None
         self.last_collided = None
+
+    def set_serving_player(self, paddle):
+        self.serving_player = paddle
         
     def lowest_y_value(self):
         return TOP_BAR_HEIGHT + BORDER_SIZE + self.rect.height / 2
@@ -70,9 +76,32 @@ class Ball(pygame.sprite.Sprite):
         paddle_touched = self.touching_a_paddle()
         if paddle_touched is not None:
             self.bounce_horizontal(paddle_touched)
+
+    def update_serving(self):
+        self.position = list(self.serving_player.rect.center)
+        if self.position[0] > SCREEN_SIZE[0] / 2:
+            self.position[0] -= 10
+        else:
+            self.position[0] +=10
+        self.rect.center = self.position
     
     def update(self, ms):
-        self.update_bouncing(ms)
+        if self.serving_player is None:
+            self.update_bouncing(ms)
+        else:
+            self.update_serving()
+
+    def ball_served(self, player):
+        if player == self.serving_player:
+            self.serving_player = None
+            dy = random.uniform(0.3, 1.0)
+            if random.randint(0,1) == 1:
+                dy = -dy
+            
+            if self.position[0] > SCREEN_SIZE[0] / 2:
+                self.speed = [-0.25, dy]
+            else:
+                self.speed = [0.25, dy]
  
 class Paddle(pygame.sprite.Sprite):
     Y_SPEED = 0.75
@@ -88,6 +117,7 @@ class Paddle(pygame.sprite.Sprite):
     def setup_keys(self, keys):
         self.key_move_down = keys[0]
         self.key_move_up = keys[1]
+        self.key_serve = keys[2]
 
     def handle_key_down(self, key):
         if key == self.key_move_down:
@@ -100,6 +130,8 @@ class Paddle(pygame.sprite.Sprite):
             self.move_y = 0
         elif key == self.key_move_up and self.move_y == -self.Y_SPEED:
             self.move_y = 0
+        elif key == self.key_serve:
+            pygame.event.post( pygame.event.Event( BALL_SERVED, player = self) )
 
     def change_position(self, ms):
         self.rect.move_ip(0,self.move_y * ms)
@@ -133,6 +165,7 @@ class Game:
         self.backdrop = pygame.image.load('img/pong_a_2.bmp').convert()
         self.state = self.RUNNING
         self.create_game_sprites()
+        self.choose_serving_player()
         self.clock = pygame.time.Clock()
 
     def is_game_over(self):
@@ -169,6 +202,13 @@ class Game:
             if ourevent.type == pygame.KEYDOWN:
                 for sprite in self.sprites:
                         sprite.handle_key_down(ourevent.key)
+
+            if ourevent.type == BALL_SERVED:
+                self.ball_group.sprite.ball_served(ourevent.player)
+
+    def choose_serving_player(self):
+        [ paddle_0, paddle_1 ] = self.sprites.sprites()
+        self.ball_group.sprite.set_serving_player(paddle_0)
 
     def create_game_sprites(self):
         self.sprites = pygame.sprite.Group()

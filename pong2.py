@@ -11,6 +11,19 @@ BORDER_SIZE = 5
 BALL_SCORED = pygame.USEREVENT + 0
 BALL_SERVED = pygame.USEREVENT + 1
 
+class Score(pygame.sprite.Sprite):
+ 
+    def __init__(self):
+        pygame.sprite.Sprite.__init__(self)
+        self.font = pygame.font.Font('img/slkscr.ttf',20)
+        self.score_update((0, 0))
+    
+    def score_update(self, score):
+        textscore = str(' - ').join([str(s) for s in score])
+        self.image = self.font.render(textscore,True,(255,255,255))
+        self.rect = self.image.get_rect()
+        self.rect.center = ( SCREEN_SIZE[0] / 2, 15 )
+
 class Ball(pygame.sprite.Sprite):
     def __init__(self, paddles):
         pygame.sprite.Sprite.__init__(self)
@@ -187,6 +200,7 @@ class Game:
         self.screen.blit(self.backdrop,(0,0))
         self.sprites.draw(self.screen)
         self.ball_group.draw(self.screen)
+        self.score_group.draw(self.screen)        
         pygame.display.update()
         return self.clock.tick(60)
         
@@ -224,6 +238,8 @@ class Game:
         else:
             paddle_1.points += 1
             self.ball_group.sprite.set_serving_player(paddle_1)
+            
+        self.score_group.sprite.score_update( (paddle_0.points, paddle_1.points) )
 
     def choose_serving_player(self):
         [ paddle_0, paddle_1 ] = self.sprites.sprites()
@@ -234,6 +250,7 @@ class Game:
         self.sprites.add( Paddle( (20, SCREEN_SIZE[1] / 2), (pygame.K_z, pygame.K_a, pygame.K_s)))
         self.sprites.add( Paddle( (SCREEN_SIZE[0]-20, SCREEN_SIZE[1] / 2), (pygame.K_l, pygame.K_p, pygame.K_o)))
         self.ball_group = pygame.sprite.GroupSingle( Ball(self.sprites) )
+        self.score_group = pygame.sprite.GroupSingle( Score() )
 
     def update(self, ms):
         self.sprites.update(ms)
